@@ -27,8 +27,6 @@ def check_file_exists(side, filename):
 	else:
 		return false, path+"/"+filename
 
-def send_request(socket):
-	
 
 def main():
 	# Create the socket with which we will connect to the server
@@ -36,9 +34,13 @@ def main():
 
 	# The server's address is a tuple, comprising the server's IP address or hostname, and port number
 	srv_addr = (sys.argv[1], int(sys.argv[2])) # sys.argv[x] is the x'th argument on the command line
+	operation = sys.argv[3]
+	filename = sys.argv[4]
 
 	# Convert to string, to be used shortly
 	srv_addr_str = str(srv_addr)
+
+	client = controller_client(cli_sock, sys.argv[1], sys.argv[2])
 
 	""" 
 	Enclose the connect() call in a try-except block to catch
@@ -47,44 +49,49 @@ def main():
 	have been handled separately.
 	"""
 	try:
-		print("Connecting to " + srv_addr_str + "... ")
-
-		"""
-		Connect our socket to the server. This will actually bind our socket to
-		a port on our side; the port number will most probably be in the
-		ephemeral port number range and may or may not be chosen at random
-		(depends on the OS). The connect() call will initiate TCP's 3-way
-		handshake procedure. On successful return, said procedure will have
-		finished successfully, and a TCP connection to the server will have been
-		established.
-		"""
-		cli_sock.connect(srv_addr)
+		client.status_report("\nEstablishing connection to " + srv_addr_str + "...")
 		
-		print("Connected. Now chatting...")
+		cli_sock.connect(srv_addr)
+
+		client.status_report("Connection established.")
+
+		try:
+			if operation == "list":
+				client.request_list()
+				client.recieve_list(client.fetch_data())
+
+				timeout.sleep(client.connection_weakness)
+			
+			elif operation == 'get':
+				client.request_file(filename)
+				client.receive_file(client.fetch_data())
+
+				timeout.sleep(client.connection_weakness)
+			
+			elif operation == "put":
+				client.send_file(filename)
+
+			else:
+				client.status_report("Error: Invalid operation...")
+				# Exit with a non zero value, to indicate an error condition
+				exit(1)
+	
+		except Exception as e:
+			# Print the exception message
+			client.status_report("Error: ", e)
+		
+
+		finally:
+			"""
+			If an error occurs or the server closes the connection, call close() on the
+			connected socket to release the resources allocated to it by the OS.
+			"""
+			cli_sock.close()
+
 	except Exception as e:
 		# Print the exception message
-		print(e)
+		client.status_report(e)
 		# Exit with a non-zero value, to indicate an error condition
 		exit(1)
 
-	"""
-	Surround the following code in a try-except block to account for
-	socket errors as well as errors related to user input. Ideally
-	these error conditions should be handled separately.
-	"""
-	try:
-		# checks the input instruction valid
-		instr, filename = check_instruction_valid(cli_sock, srv_addr)
-
-		#calls the function related to the instruciton
-		functions = 
-
-	finally:
-		"""
-		If an error occurs or the server closes the connection, call close() on the
-		connected socket to release the resources allocated to it by the OS.
-		"""
-		cli_sock.close()
-
-	# Exit with a zero value, to indicate success
-	exit(0)
+	exit()
