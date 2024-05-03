@@ -48,3 +48,4 @@ def keyboard_to_socket(socket):
 	# Send the whole line through the socket; remember, TCP provides no guarantee that it will be delivered in one go.
 	bytes_sent = socket.sendall(str.encode(user_input))
 	return bytes_sent
+
